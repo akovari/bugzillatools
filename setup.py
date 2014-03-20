@@ -11,6 +11,7 @@ long_description = '\n\n'.join((readme, changes))
 
 distutils.core.setup(
     name='bugzillatools',
+    use_2to3=True,
     version=bzlib.version,
     description='Bugzilla CLI client, XML-RPC binding and VCS plugins',
     author='Fraser Tweedale',
