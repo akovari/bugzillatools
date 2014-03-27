@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import ConfigParser
+import configparser
 import os.path
 import re
 
@@ -37,7 +37,7 @@ def check_section(section):
     raise ConfigError('invalid section: {}'.format(section))
 
 
-class Config(ConfigParser.SafeConfigParser):
+class Config(configparser.SafeConfigParser):
     _instances = {}
 
     @classmethod
@@ -49,16 +49,16 @@ class Config(ConfigParser.SafeConfigParser):
 
     def __init__(self, path):
         path = os.path.expanduser(path)
-        ConfigParser.SafeConfigParser.__init__(self)
+        configparser.SafeConfigParser.__init__(self)
         self._path = path
         self.read(self._path)
 
     def write(self):
         with open(self._path, 'w') as fp:
-            ConfigParser.SafeConfigParser.write(self, fp)
+            configparser.SafeConfigParser.write(self, fp)
 
     def add_section(self, section):
-        ConfigParser.SafeConfigParser.add_section(self, check_section(section))
+        configparser.SafeConfigParser.add_section(self, check_section(section))
 
 
-NoSectionError = ConfigParser.NoSectionError
+NoSectionError = configparser.NoSectionError

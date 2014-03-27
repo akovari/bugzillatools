@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import urlparse
-import xmlrpclib
+import urllib.parse
+import xmlrpc.client
 
 from . import bug
 from . import config
@@ -57,7 +57,7 @@ class Bugzilla(object):
         required, but may be ``None``.
         """
         mandatory_args = set(['server', 'url', 'user', 'password'])
-        mandatory_args -= kwargs.viewkeys()
+        mandatory_args -= kwargs.keys()
         if mandatory_args:
             raise TypeError('Mandatory args ({}) not supplied'.format(
                 ', '.join("'{}'".format(arg) for arg in mandatory_args)))
@@ -78,8 +78,8 @@ class Bugzilla(object):
         _server.update(
             {k: kwargs[k] for k in mandatory_kwargs if kwargs[k]}
         )
-        if mandatory_kwargs - _server.viewkeys():
-            missing_args = ', '.join(mandatory_kwargs - _server.viewkeys())
+        if mandatory_kwargs - _server.keys():
+            missing_args = ', '.join(mandatory_kwargs - _server.keys())
             raise UserWarning("missing args: {}".format(missing_args))
         return cls(**_server)
 
@@ -100,7 +100,7 @@ class Bugzilla(object):
         self.password = password
         self.config = config
 
-        parsed_url = urlparse.urlparse(url)
+        parsed_url = urllib.parse.urlparse(url)
         if not parsed_url.netloc:
             raise URLError('URL {!r} is not valid.'.format(url))
         if parsed_url.scheme not in ('http', 'https'):
@@ -113,7 +113,7 @@ class Bugzilla(object):
             )
         url = url + 'xmlrpc.cgi' if url[-1] == '/' else url + '/xmlrpc.cgi'
         # httplib explodes if url is unicode
-        self.server = xmlrpclib.ServerProxy(str(url), use_datetime=True)
+        self.server = xmlrpc.client.ServerProxy(str(url), use_datetime=True)
 
     def rpc(self, *args, **kwargs):
         """Do an RPC on the Bugzilla server.
@@ -166,14 +166,11 @@ class Bugzilla(object):
         field = filter(lambda x: x['name'] == name, self.get_fields())[0]
         values = field['values']
         if omit_empty:
-            values = filter(lambda x: x['name'], values)
+            values = [x for x in values if x['name']]
         value_field = field.get('value_field')
         if visible_for and value_field and value_field in visible_for:
             visibility_value = visible_for[value_field]
-            values = filter(
-                lambda x: visibility_value in x['visibility_values'],
-                values
-            )
+            values = [x for x in values if visibility_value in x['visibility_values']]
         if sort:
             values = sorted(values, key=lambda x: int(x['sortkey']))
         return values
@@ -198,6 +195,6 @@ class Bugzilla(object):
         if len(users) > 1:
             raise UserError("Multiple users matching '{}': {}".format(
                 fragment,
-                ', '.join(map(lambda x: x['name'], users))
+                ', '.join([x['name'] for x in users])
             ))
         return users[0]

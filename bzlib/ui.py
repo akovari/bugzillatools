@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import unicode_literals
+
 
 import functools
 import math
@@ -39,10 +39,7 @@ def number(items):
     """Maps numbering onto given values"""
     n = len(items)
     width = math.log10(n - 1) // 1 + 1 if n > 1 else 1
-    return map(
-        lambda x: '[{0[0]:{1}}] {0[1]}'.format(x, int(width)),
-        enumerate(items)
-    )
+    return ['[{0[0]:{1}}] {0[1]}'.format(x, int(width)) for x in enumerate(items)]
 
 
 def filter_yn(string, default=None):
@@ -112,7 +109,7 @@ def filter_list(
     strs = re.split(r'[\s:;,]+', string)
     strs = strs[1:] if strs and not strs[0] else strs
     strs = strs[:-1] if strs and not strs[-1] else strs
-    values = [filter(s) for s in strs]
+    values = [list(filter(s)) for s in strs]
     valueset = set(values)
     if len(valueset) != len(values):
         if not allow_duplicates:
@@ -168,7 +165,7 @@ def filter_user(string, bugzilla=None, default=None):
 
 class UI(object):
     def show(self, msg):
-        print msg
+        print(msg)
 
     def bail(self, msg=None):
         """Exit uncleanly with an optional message"""
@@ -183,7 +180,7 @@ class UI(object):
         """
         while True:
             try:
-                return filter_fn(raw_input(prompt))
+                return filter_fn(input(prompt))
             except InvalidInputError as e:
                 if e.message:
                     self.show('ERROR: ' + e.message)
@@ -291,7 +288,7 @@ class UI(object):
             The maximum number of items that must be chosen from the list
             (exclusive).  Defaults to None (no maximum).
         """
-        if default and filter(lambda x: x >= len(items) or x < 0, default):
+        if default and [x for x in default if x >= len(items) or x < 0]:
             raise IndexError('Default value ({}) out of range({})'.format(
                 default, len(default)
             ))
@@ -314,4 +311,4 @@ class UI(object):
             ),
             prompt
         )
-        return map(lambda x: items[x], indices)
+        return [items[x] for x in indices]

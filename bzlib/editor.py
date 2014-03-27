@@ -49,7 +49,7 @@ def input(message, remove_comments=True):
     text.append('An empty message aborts the operation.')
 
     lines = ['\n']  # start with a single empty line
-    lines += map(lambda x: '# ' + x + '\n', textwrap.wrap(' '.join(text)))
+    lines += ['# ' + x + '\n' for x in textwrap.wrap(' '.join(text))]
 
     with tempfile.NamedTemporaryFile() as fh:
         fh.writelines(lines)
@@ -60,7 +60,7 @@ def input(message, remove_comments=True):
         fh.seek(0)
         lines = fh.readlines()
         if remove_comments:
-            lines = filter(lambda x: not x or x[0] != '#', lines)
+            lines = [x for x in lines if not x or x[0] != '#']
         if not lines or not lines[0] and len(lines) == 1:
             # no lines, or a single empty line
             raise EmptyInputError()

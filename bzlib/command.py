@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import unicode_literals
+
 
 import argparse
 import datetime
@@ -44,7 +44,7 @@ def date(s):
     if not match:
         raise argparse.ArgumentTypeError('Date must be in format: YYYY-MM-DD')
     try:
-        return datetime.date(*map(int, match.group(1, 2, 3)))
+        return datetime.date(*list(map(int, match.group(1, 2, 3))))
     except ValueError as e:
         raise argparse.ArgumentTypeError(e.message)
 
@@ -184,7 +184,7 @@ class Config(Command):
         if args.list:
             for section in conf.sections():
                 for option, value in conf.items(section):
-                    print '{}={}'.format('.'.join((section, option)), value)
+                    print('{}={}'.format('.'.join((section, option)), value))
         elif not args.name:
             raise UserWarning('No configuration option given.')
         else:
@@ -209,10 +209,10 @@ class Config(Command):
                     if conf.has_option(section, option) else None
                 conf.set(section, option, args.value)
                 conf.write()
-                print '{}: {} => {}'.format(args.name, oldvalue, args.value)
+                print('{}: {} => {}'.format(args.name, oldvalue, args.value))
             else:
                 curvalue = conf.get(section, option)
-                print '{}: {}'.format(args.name, curvalue)
+                print('{}: {}'.format(args.name, curvalue))
 
 
 class Help(Command):
@@ -227,12 +227,12 @@ class Help(Command):
             self._parser.parse_args(['--help'])
         else:
             if self._args.subcommand in self._aliases:
-                print "'{}': alias for {}".format(
+                print("'{}': alias for {}".format(
                     self._args.subcommand,
                     self._aliases[self._args.subcommand]
-                )
+                ))
             elif self._args.subcommand not in self._commands:
-                print "unknown subcommand: '{}'".format(self._args.subcommand)
+                print("unknown subcommand: '{}'".format(self._args.subcommand))
             else:
                 self._parser.parse_args([self._args.subcommand, '--help'])
 
@@ -257,10 +257,7 @@ class Assign(BugzillaCommand):
         args = self._args
         message = editor.input('Enter your comment.') if args.message is True \
             else args.message
-        return map(
-            lambda x: self.bz.bug(x).set_assigned_to(args.to, comment=message),
-            args.bugs
-        )
+        return [self.bz.bug(x).set_assigned_to(args.to, comment=message) for x in args.bugs]
 
 
 @with_set('given bugs', 'blocked bugs', metavar='BUG', type=int)
@@ -271,12 +268,12 @@ class Block(BugzillaCommand):
     """Show or update block list of given bugs."""
     def __call__(self):
         args = self._args
-        bugs = map(self.bz.bug, args.bugs)
+        bugs = list(map(self.bz.bug, args.bugs))
         if args.add or args.remove or args.set:
             message = editor.input('Enter your comment.') \
                 if args.message is True else args.message
             # update blocked bugs
-            map(
+            list(map(
                 lambda x: self.bz.bug(x).update_block(
                     add=args.add,
                     remove=args.remove,
@@ -284,16 +281,16 @@ class Block(BugzillaCommand):
                     comment=message
                 ),
                 args.bugs
-            )
+            ))
         else:
             # show blocked bugs
             for bug in bugs:
-                print 'Bug {}:'.format(bug.bugno)
+                print('Bug {}:'.format(bug.bugno))
                 if bug.data['blocks']:
-                    print '  Blocked bugs: {}'.format(
-                        ', '.join(map(str, bug.data['blocks'])))
+                    print('  Blocked bugs: {}'.format(
+                        ', '.join(map(str, bug.data['blocks']))))
                 else:
-                    print '  No blocked bugs'
+                    print('  No blocked bugs')
 
 
 @with_add_remove('given users', 'CC List', metavar='USER')
@@ -303,35 +300,35 @@ class CC(BugzillaCommand):
     """Show or update CC List."""
     def __call__(self):
         args = self._args
-        bugs = map(self.bz.bug, args.bugs)
+        bugs = list(map(self.bz.bug, args.bugs))
         if args.add or args.remove:
             # get actual users
             getuser = lambda x: self.bz.match_one_user(x)['name']
-            add = map(getuser, args.add) if args.add else None
-            remove = map(getuser, args.remove) if args.remove else None
+            add = list(map(getuser, args.add)) if args.add else None
+            remove = list(map(getuser, args.remove)) if args.remove else None
 
             # get message
             message = editor.input('Enter your comment.') \
                 if args.message is True else args.message
 
             # update CC list
-            map(
+            list(map(
                 lambda x: self.bz.bug(x).update_cc(
                     add=add,
                     remove=remove,
                     comment=message
                 ),
                 args.bugs
-            )
+            ))
         else:
             # show CC List
             for bug in bugs:
-                print 'Bug {}:'.format(bug.bugno)
+                print('Bug {}:'.format(bug.bugno))
                 if bug.data['cc']:
-                    print '  CC List: {}'.format(
-                        ', '.join(map(str, bug.data['cc'])))
+                    print('  CC List: {}'.format(
+                        ', '.join(map(str, bug.data['cc']))))
                 else:
-                    print '  0 users'
+                    print('  0 users')
 
 
 @with_bugs
@@ -363,7 +360,7 @@ class Comment(BugzillaCommand):
         message = editor.input('Enter your comment.') \
             if args.message is True else args.message
         if message:
-            map(lambda x: self.bz.bug(x).add_comment(message), args.bugs)
+            list(map(lambda x: self.bz.bug(x).add_comment(message), args.bugs))
         else:
             def cmtfmt(bug):
                 comments = sorted(
@@ -390,7 +387,7 @@ class Comment(BugzillaCommand):
                             and not (args.which and n not in args.which)
                     )
                 )
-            print '\n'.join(map(cmtfmt, args.bugs))
+            print('\n'.join(map(cmtfmt, args.bugs)))
 
 
 @with_set('given bugs', 'depdendencies', metavar='BUG', type=int)
@@ -401,12 +398,12 @@ class Depend(BugzillaCommand):
     """Show or update dependencies of given bugs."""
     def __call__(self):
         args = self._args
-        bugs = map(self.bz.bug, args.bugs)
+        bugs = list(map(self.bz.bug, args.bugs))
         if args.add or args.remove or args.set:
             message = editor.input('Enter your comment.') \
                 if args.message is True else args.message
             # update dependencies
-            map(
+            list(map(
                 lambda x: x.update_depend(
                     add=args.add,
                     remove=args.remove,
@@ -414,16 +411,16 @@ class Depend(BugzillaCommand):
                     comment=message
                 ),
                 bugs
-            )
+            ))
         else:
             # show dependencies
             for bug in bugs:
-                print 'Bug {}:'.format(bug.bugno)
+                print('Bug {}:'.format(bug.bugno))
                 if bug.data['depends_on']:
-                    print '  Dependencies: {}'.format(
-                        ', '.join(map(str, bug.data['depends_on'])))
+                    print('  Dependencies: {}'.format(
+                        ', '.join(map(str, bug.data['depends_on']))))
                 else:
-                    print '  No dependencies'
+                    print('  No dependencies')
 
 
 @with_bugs
@@ -438,7 +435,7 @@ class Desc(BugzillaCommand):
                 bug,
                 self.formatstring.format(**desc)
             )
-        print '\n'.join(_descfmt(bug) for bug in self._args.bugs)
+        print('\n'.join(_descfmt(bug) for bug in self._args.bugs))
 
 
 @with_bugs
@@ -446,7 +443,7 @@ class Dump(BugzillaCommand):
     """Print internal representation of bug data."""
     def __call__(self):
         bugs = (self.bz.bug(x) for x in self._args.bugs)
-        print '\n'.join(str((x.data, x.comments)) for x in bugs)
+        print('\n'.join(str((x.data, x.comments)) for x in bugs))
 
 
 @with_bugs
@@ -464,7 +461,7 @@ class Edit(BugzillaCommand):
         for bug in (self.bz.bug(x) for x in self._args.bugs):
             kwargs = {
                 k: getattr(self._args, k)
-                for k in self._fields & self._args.__dict__.viewkeys()
+                for k in self._fields & self._args.__dict__.keys()
             }
             bug.update(**kwargs)
 
@@ -473,25 +470,25 @@ class Fields(BugzillaCommand):
     """List valid values for bug fields."""
     def __call__(self):
         args = self._args
-        fields = filter(lambda x: 'values' in x, self.bz.get_fields())
+        fields = [x for x in self.bz.get_fields() if 'values' in x]
         for field in fields:
             keyfn = lambda x: x.get('visibility_values')
             groups = itertools.groupby(
                 sorted(field['values'], None, keyfn),
                 keyfn
             )
-            print field['name'], ':'
+            print(field['name'], ':')
             for key, group in groups:
                 keyfn = lambda x: int(x.get('sortkey', -1))
                 values = sorted(group, None, keyfn)
                 if key:
-                    print '  {}: {}'.format(
+                    print('  {}: {}'.format(
                         ','.join(key),
-                        ','.join(map(lambda x: x['name'], values))
-                    )
+                        ','.join([x['name'] for x in values])
+                    ))
                 else:
                     value_names = (v.get('name') for v in values)
-                    print '  ', ','.join(s for s in value_names if s)
+                    print('  ', ','.join(s for s in value_names if s))
 
 
 def _format_history(history):
@@ -499,7 +496,7 @@ def _format_history(history):
     widths = [max(len(str(h[i])) for h in history) for i in range(5)]
     template = '{:{}}'
     return (' | '.join(
-        (itertools.starmap(template.format, zip(map(str, h), widths)))
+        (itertools.starmap(template.format, list(zip(list(map(str, h)), widths))))
     ) for h in history)
 
 
@@ -518,10 +515,10 @@ class History(BugzillaCommand):
                 _history[0][0] = h['who']
                 _history[0][1] = h['when']
                 history.extend(_history)
-            print 'History of Bug {}:'.format(bug.bugno)
+            print('History of Bug {}:'.format(bug.bugno))
             for line in _format_history(history):
-                print '  ' + line
-            print
+                print('  ' + line)
+            print()
 
 
 @with_bugs
@@ -531,12 +528,12 @@ class Info(BugzillaCommand):
         args = self._args
         fields = config.show_fields
         for bug in map(self.bz.bug, args.bugs):
-            print 'Bug {}:'.format(bug.bugno)
-            fields = config.show_fields & bug.data.viewkeys()
-            width = max(map(len, fields)) - min(map(len, fields)) + 2
+            print('Bug {}:'.format(bug.bugno))
+            fields = config.show_fields & bug.data.keys()
+            width = max(list(map(len, fields))) - min(list(map(len, fields))) + 2
             for field in fields:
-                print '  {:{}} {}'.format(field + ':', width, bug.data[field])
-            print
+                print('  {:{}} {}'.format(field + ':', width, bug.data[field]))
+            print()
 
 
 @with_bugs
@@ -547,9 +544,9 @@ class List(BugzillaCommand):
         lens = [len(str(x)) for x in args.bugs]
         width = max(lens) - min(lens) + 2
         for bug in map(self.bz.bug, args.bugs):
-            print 'Bug {:{}} {}'.format(
+            print('Bug {:{}} {}'.format(
                 str(bug.bugno) + ':', width, bug.data['summary']
-            )
+            ))
 
 
 class New(BugzillaCommand):
@@ -562,9 +559,7 @@ class New(BugzillaCommand):
         fields = self.bz.get_fields()
         defaulted_fields = [
             'description', 'op_sys', 'rep_platform', 'priority', 'severity']
-        mandatory_fields = filter(
-            lambda x: x['is_mandatory'] or x['name'] in defaulted_fields,
-            fields)
+        mandatory_fields = [x for x in fields if x['is_mandatory'] or x['name'] in defaulted_fields]
 
         # first choose the product
         products = [x['name'] for x in self.bz.get_products()]
@@ -587,7 +582,7 @@ class New(BugzillaCommand):
                 # TODO handle select-multiple fields
                 b.data[field['name']] = self._ui.choose(
                     'Choose the {}'.format(field['display_name']),
-                    map(lambda x: x['name'], values)
+                    [x['name'] for x in values]
                 )
             else:
                 # TODO take field types into account
@@ -635,7 +630,7 @@ class New(BugzillaCommand):
                 # TODO handle select-multiple fields
                 b.data[field['name']] = self._ui.choose(
                     'Choose the {}'.format(field['display_name']),
-                    map(lambda x: x['name'], values)
+                    [x['name'] for x in values]
                 )
             else:
                 # TODO take field types into account
@@ -670,11 +665,11 @@ class Products(BugzillaCommand):
     """List the products of a Bugzilla instance."""
     def __call__(self):
         products = self.bz.get_products()
-        width = max(map(lambda x: len(x['name']), products)) + 1
+        width = max([len(x['name']) for x in products]) + 1
         for product in products:
-            print '{:{}} {}'.format(
+            print('{:{}} {}'.format(
                 product['name'] + ':', width, product['description']
-            )
+            ))
 
 
 @with_bugs
@@ -719,10 +714,7 @@ class Status(BugzillaCommand):
 
         if args.dupe_of:
             # This is all we need; --status and --resolution are ignored
-            return map(
-                lambda x: self.bz.bug(x).set_dupe_of(args.dupe_of, message),
-                args.bugs
-            )
+            return [self.bz.bug(x).set_dupe_of(args.dupe_of, message) for x in args.bugs]
 
         # get the values of the 'bug_status' field
         values = self.bz.get_field_values('bug_status')
@@ -733,7 +725,7 @@ class Status(BugzillaCommand):
             # choose status
             status = self._ui.choose(
                 'Choose a status',
-                map(lambda x: x['name'], values)
+                [x['name'] for x in values]
             )
 
         # check if the new status is "open"
@@ -745,7 +737,7 @@ class Status(BugzillaCommand):
             raise UserWarning("Invalid status:", status)
 
         # instantiate bugs
-        bugs = map(self.bz.bug, args.bugs)
+        bugs = list(map(self.bz.bug, args.bugs))
 
         resolution = None
         if not is_open:
@@ -753,23 +745,20 @@ class Status(BugzillaCommand):
             if args.resolution:
                 # A resolution was supplied.
                 resolution = args.resolution.upper()
-            elif any(map(lambda x: x.is_open(), bugs)):
+            elif any([x.is_open() for x in bugs]):
                 # A resolution was not supplied, but one is required since
                 # at least one of the bugs is currently open.  Choose one.
                 values = self.bz.get_field_values('resolution')
                 resolution = self._ui.choose(
                     'Choose a resolution',
-                    map(lambda x: x['name'], values)
+                    [x['name'] for x in values]
                 )
 
-        return map(
-            lambda x: self.bz.bug(x).set_status(
+        return [self.bz.bug(x).set_status(
                 status=status,
                 resolution=resolution,
                 comment=message
-            ),
-            args.bugs
-        )
+            ) for x in args.bugs]
 
 
 def _make_set_argument(arg):
@@ -815,12 +804,12 @@ class Search(BugzillaCommand):
         lens = [len(str(b.bugno)) for b in bugs]
 
         for _bug in bugs:
-            print 'Bug {:{}} {}'.format(
+            print('Bug {:{}} {}'.format(
                 str(_bug.bugno) + ':', max(lens) - min(lens) + 2,
                 _bug.data['summary']
-            )
+            ))
         n = len(bugs)
-        print '=> {} bug{} matched criteria'.format(n, 's' if n else '')
+        print('=> {} bug{} matched criteria'.format(n, 's' if n else ''))
 
 
 @with_bugs
@@ -860,19 +849,16 @@ class Time(BugzillaCommand):
                 # be absent from bug data.  first check that they're there.
                 time_fields = ('deadline', 'estimated_time', 'remaining_time')
                 if not all(x in bug.data for x in time_fields):
-                    print 'User is not in the time-tracking group.'
+                    print('User is not in the time-tracking group.')
                     return
-                print 'Bug {}:'.format(bug.bugno)
-                print '  Estimated time: {}'.format(bug.data['estimated_time'])
-                print '  Remaining time: {}'.format(bug.data['remaining_time'])
-                print '  Deadline:       {}'.format(bug.data['deadline'])
-                print '  Time worked:    {}'.format(bug.actual_time())
+                print('Bug {}:'.format(bug.bugno))
+                print('  Estimated time: {}'.format(bug.data['estimated_time']))
+                print('  Remaining time: {}'.format(bug.data['remaining_time']))
+                print('  Deadline:       {}'.format(bug.data['deadline']))
+                print('  Time worked:    {}'.format(bug.actual_time()))
 
 
 # the list got too long; metaprogram it ^_^
-commands = filter(
-    lambda x: type(x) == type                     # is a class \
+commands = [x for x in locals().values() if type(x) == type                     # is a class \
         and issubclass(x, Command)                # is a Command \
-        and x not in [Command, BugzillaCommand],  # not abstract
-    locals().viewvalues()
-)
+        and x not in [Command, BugzillaCommand]]
